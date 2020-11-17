@@ -65,7 +65,7 @@ public class MicroJpaExtension implements Extension {
 
     private Map<PersistenceUnitLiteral, Map<String, String>> persistenceProperties = new ConcurrentHashMap<>();
     private Set<PersistenceContextLiteral> persistenceContexts
-        = Collections.newSetFromMap(new ConcurrentHashMap<PersistenceContextLiteral, Boolean>());
+        = Collections.newSetFromMap(new ConcurrentHashMap<>());
 
     public void addQualifiers(@Observes BeforeBeanDiscovery event) {
         event.configureQualifier(PersistenceUnit.class)
@@ -94,7 +94,7 @@ public class MicroJpaExtension implements Extension {
         annotatedType.getMethods().stream()
             .map(method -> ofNullable(method.getAnnotation(PersistenceContext.class)))
             .filter(Optional::isPresent).map(Optional::get)
-            .forEach(persistenceContext -> addPersistenceContext(persistenceContext));
+            .forEach(this::addPersistenceContext);
         ofNullable(annotatedType.getAnnotation(PersistenceUnit.class)).ifPresent(this::initPersistenceProperties);
         ofNullable(annotatedType.getAnnotation(PersistenceContext.class)).ifPresent(this::addPersistenceContext);
         ofNullable(annotatedType.getAnnotation(PersistenceUnits.class))
@@ -116,12 +116,12 @@ public class MicroJpaExtension implements Extension {
 
     public void addBeans(@Observes AfterBeanDiscovery event) {
         persistenceProperties.values().forEach(this::overrideProperties);
-        persistenceProperties.entrySet().forEach(entry -> event
+        persistenceProperties.forEach((key, value) -> event
                 .<EntityManagerFactory>addBean()
                 .scope(ApplicationScoped.class)
                 .addType(EntityManagerFactory.class)
-                .addQualifiers(entry.getKey())
-                .createWith(c -> Persistence.createEntityManagerFactory(entry.getKey().unitName, entry.getValue()))
+                .addQualifiers(key)
+                .createWith(c -> Persistence.createEntityManagerFactory(key.unitName, value))
                 .destroyWith((emf, c) -> emf.close()));
         persistenceContexts.forEach(persistenceContext -> event
                 .<EntityManager>addBean()

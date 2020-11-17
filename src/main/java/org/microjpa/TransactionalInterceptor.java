@@ -84,7 +84,7 @@ public class TransactionalInterceptor {
     }
 
     private List<EntityManager> getActiveEntityManagers() {
-        Set<Bean<? extends EntityManager>> entityManagerBeans = (Set<Bean<? extends EntityManager>>)(Set<?>)beanManager
+        Set<Bean<? extends EntityManager>> entityManagerBeans = (Set<Bean<? extends EntityManager>>)beanManager
                 .getBeans(EntityManager.class, new Any.Literal());
         List<EntityManager> entityManagers = new ArrayList<>();
         entityManagerBeans.forEach(bean -> {
